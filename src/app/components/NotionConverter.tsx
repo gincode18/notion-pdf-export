@@ -3,32 +3,90 @@
 import { useFormStatus } from 'react-dom'
 import { useState, useTransition } from 'react'
 import { convertNotionToMarkdown } from '@/app/actions/notion'
-import { pdf } from '@react-pdf/renderer'
+import { Font, pdf } from '@react-pdf/renderer'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
-import ReactMarkdown from 'react-markdown'
 
-// Add PDF styles
+// Register fonts with local files or use standard fonts
+Font.register({
+  family: 'Helvetica',
+  fonts: [
+    {
+      src: 'Helvetica',
+    },
+    {
+      src: 'Helvetica-Bold',
+      fontWeight: 'bold',
+    }
+  ]
+});
+
+// Updated PDF styles with Helvetica
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontSize: 12,
+    backgroundColor: '#ffffff',
   },
-  text: {
-    marginBottom: 10,
+  header: {
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottom: '1 solid #e5e7eb',
+  },
+  headerText: {
+    fontSize: 24,
     fontFamily: 'Helvetica',
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  content: {
+    fontFamily: 'Helvetica',
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: '#374151',
+  },
+  paragraph: {
+    marginBottom: 12,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 40,
+    right: 40,
+    fontSize: 10,
+    color: '#6b7280',
+    textAlign: 'center',
+    paddingTop: 10,
+    borderTop: '1 solid #e5e7eb',
   },
 });
 
-// Add PDF Document component
-const PDFDocument = ({ markdown }: { markdown: string }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <View>
-        <Text style={styles.text}>{markdown}</Text>
-      </View>
-    </Page>
-  </Document>
-);
+// Enhanced PDF Document component
+const PDFDocument = ({ markdown }: { markdown: string }) => {
+  const title = "Notion Export";
+  const date = new Date().toLocaleDateString();
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>{title}</Text>
+          <Text style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>
+            Generated on {date}
+          </Text>
+        </View>
+        <View style={styles.content}>
+          {markdown.split('\n').map((paragraph, index) => (
+            <Text key={index} style={styles.paragraph}>
+              {paragraph}
+            </Text>
+          ))}
+        </View>
+        <Text style={styles.footer}>
+          Generated from Notion • Page {1}
+        </Text>
+      </Page>
+    </Document>
+  );
+};
 
 export function NotionConverter() {
   const { pending } = useFormStatus()
@@ -48,7 +106,6 @@ export function NotionConverter() {
     })
   }
 
-  // Add download PDF function
   const downloadPDF = async () => {
     if (!markdown) return;
     
@@ -114,4 +171,4 @@ export function NotionConverter() {
       )}
     </div>
   )
-} 
+}
