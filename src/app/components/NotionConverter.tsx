@@ -3,6 +3,32 @@
 import { useFormStatus } from 'react-dom'
 import { useState, useTransition } from 'react'
 import { convertNotionToMarkdown } from '@/app/actions/notion'
+import { pdf } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import ReactMarkdown from 'react-markdown'
+
+// Add PDF styles
+const styles = StyleSheet.create({
+  page: {
+    padding: 40,
+    fontSize: 12,
+  },
+  text: {
+    marginBottom: 10,
+    fontFamily: 'Helvetica',
+  },
+});
+
+// Add PDF Document component
+const PDFDocument = ({ markdown }: { markdown: string }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      <View>
+        <Text style={styles.text}>{markdown}</Text>
+      </View>
+    </Page>
+  </Document>
+);
 
 export function NotionConverter() {
   const { pending } = useFormStatus()
@@ -21,6 +47,21 @@ export function NotionConverter() {
       }
     })
   }
+
+  // Add download PDF function
+  const downloadPDF = async () => {
+    if (!markdown) return;
+    
+    const blob = await pdf(<PDFDocument markdown={markdown} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'notion-export.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -55,12 +96,20 @@ export function NotionConverter() {
             readOnly
             className="w-full h-[500px] px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent font-mono text-sm"
           />
-          <button
-            onClick={() => navigator.clipboard.writeText(markdown)}
-            className="w-full rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-12 px-5"
-          >
-            Copy to Clipboard
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigator.clipboard.writeText(markdown)}
+              className="flex-1 rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-12 px-5"
+            >
+              Copy to Clipboard
+            </button>
+            <button
+              onClick={downloadPDF}
+              className="flex-1 rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-12 px-5"
+            >
+              Download PDF
+            </button>
+          </div>
         </div>
       )}
     </div>
